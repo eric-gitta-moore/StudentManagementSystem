@@ -5,8 +5,8 @@
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
-    if (!createConnection())
-        return 1;
+//    if (!createTestDatabaseConnection())
+//        return 1;
     MainWindow mainWindow;
     mainWindow.show();
     return QApplication::exec();

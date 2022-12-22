@@ -14,9 +14,10 @@
 #include "StudentModel.h"
 #include "QVariantList"
 
-static bool createConnection() {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+static bool createTestDatabaseConnection(QSqlDatabase &db) {
+//    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 //    db.setDatabaseName(QCoreApplication::applicationDirPath() + "/test.dat");
+    db.close();
     db.setDatabaseName(":memory:");
     if (!db.open()) {
         QMessageBox::critical(nullptr, QObject::tr("Cannot open database"),
@@ -42,7 +43,7 @@ static bool createConnection() {
             "    average double       not null\n"
             ")"
     );
-    qDebug() << "[createConnection] query: " << test << " ,error: " << query.lastError();
+    qDebug() << "[createTestDatabaseConnection] query: " << test << " ,error: " << query.lastError();
     QVector<StudentModel*> vector;
     vector.push_back(new StudentModel(QString("001"), QString("张磊"), 80, 73, 90));
     vector.push_back(new StudentModel(QString("002"), QString("王鹏"), 76, 69, 70));

@@ -9,6 +9,9 @@
 #include <QMessageBox>
 #include <QMap>
 #include "StudentModel.h"
+#include <QtSql/QSqlDatabase>
+#include <QtSql/QSqlError>
+#include <QtSql/QSqlQuery>
 
 #pragma execution_character_set("utf-8")
 
@@ -38,18 +41,36 @@ private:
     const QModelIndex *currentIndex;
     QLabel *statusBarLeft;
     QLabel *statusBarRight;
+    QString databaseFileName = "";
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 
     void bindSlot();
 
-    void handle_menu_addNewLine();
+    void handle_menu_action_addNewLine();
 
-    void handle_menu_showStat();
+    void handle_menu_action_showStat();
+
+    void handle_menu_action_openDatabase();
+
+    void handle_menu_action_newDatabase();
+
+    void handle_menu_action_openTestDatabase();
+
+    void handle_menu_action_closeDatabase();
 
     void initStatusBar();
+
+    void initModel();
 
     void setScoreInStatusBar(StudentModel *studentModel);
 
     void refreshUI();
+
+    bool reconnectDatabase(QString &name);
+
+    bool reBuildDatabase(QString &name);
+
+    bool checkDatabase();
 
 private slots:
 

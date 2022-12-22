@@ -33,10 +33,13 @@ class Ui_MainWindow
 {
 public:
     QAction *action_addNewLine;
-    QAction *action_openFile;
+    QAction *action_openDatabase;
     QAction *action_saveFile;
     QAction *action_saveExcel;
     QAction *action_showStat;
+    QAction *action_newDatabase;
+    QAction *action_openTestDatabase;
+    QAction *action_closeDatabase;
     QWidget *centralwidget;
     QHBoxLayout *horizontalLayout;
     QTableView *tableView;
@@ -65,14 +68,20 @@ public:
         MainWindow->resize(715, 475);
         action_addNewLine = new QAction(MainWindow);
         action_addNewLine->setObjectName(QString::fromUtf8("action_addNewLine"));
-        action_openFile = new QAction(MainWindow);
-        action_openFile->setObjectName(QString::fromUtf8("action_openFile"));
+        action_openDatabase = new QAction(MainWindow);
+        action_openDatabase->setObjectName(QString::fromUtf8("action_openDatabase"));
         action_saveFile = new QAction(MainWindow);
         action_saveFile->setObjectName(QString::fromUtf8("action_saveFile"));
         action_saveExcel = new QAction(MainWindow);
         action_saveExcel->setObjectName(QString::fromUtf8("action_saveExcel"));
         action_showStat = new QAction(MainWindow);
         action_showStat->setObjectName(QString::fromUtf8("action_showStat"));
+        action_newDatabase = new QAction(MainWindow);
+        action_newDatabase->setObjectName(QString::fromUtf8("action_newDatabase"));
+        action_openTestDatabase = new QAction(MainWindow);
+        action_openTestDatabase->setObjectName(QString::fromUtf8("action_openTestDatabase"));
+        action_closeDatabase = new QAction(MainWindow);
+        action_closeDatabase->setObjectName(QString::fromUtf8("action_closeDatabase"));
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         horizontalLayout = new QHBoxLayout(centralwidget);
@@ -189,8 +198,10 @@ public:
         menubar->addAction(menu->menuAction());
         menubar->addAction(menu_2->menuAction());
         menubar->addAction(menu_3->menuAction());
-        menu->addAction(action_openFile);
-        menu->addAction(action_saveFile);
+        menu->addAction(action_openDatabase);
+        menu->addAction(action_newDatabase);
+        menu->addAction(action_closeDatabase);
+        menu->addAction(action_openTestDatabase);
         menu->addAction(action_saveExcel);
         menu_2->addAction(action_addNewLine);
         menu_3->addAction(action_showStat);
@@ -204,10 +215,13 @@ public:
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         action_addNewLine->setText(QCoreApplication::translate("MainWindow", "\346\267\273\345\212\240\344\270\200\350\241\214", nullptr));
-        action_openFile->setText(QCoreApplication::translate("MainWindow", "\346\211\223\345\274\200\346\226\207\344\273\266", nullptr));
+        action_openDatabase->setText(QCoreApplication::translate("MainWindow", "\346\211\223\345\274\200\346\225\260\346\215\256\345\272\223", nullptr));
         action_saveFile->setText(QCoreApplication::translate("MainWindow", "\345\217\246\345\255\230\344\270\272", nullptr));
         action_saveExcel->setText(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272Excel", nullptr));
         action_showStat->setText(QCoreApplication::translate("MainWindow", "\346\230\276\347\244\272\347\273\237\350\256\241\347\273\223\346\236\234", nullptr));
+        action_newDatabase->setText(QCoreApplication::translate("MainWindow", "\346\226\260\345\273\272\346\225\260\346\215\256\345\272\223", nullptr));
+        action_openTestDatabase->setText(QCoreApplication::translate("MainWindow", "\344\275\277\347\224\250\346\265\213\350\257\225\346\225\260\346\215\256\345\272\223", nullptr));
+        action_closeDatabase->setText(QCoreApplication::translate("MainWindow", "\345\205\263\351\227\255\346\225\260\346\215\256\345\272\223", nullptr));
         groupBox_3->setTitle(QCoreApplication::translate("MainWindow", "\346\220\234\347\264\242", nullptr));
         label->setText(QCoreApplication::translate("MainWindow", "\345\255\246\345\217\267\346\210\226\345\247\223\345\220\215\357\274\232", nullptr));
         pushButton_search->setText(QCoreApplication::translate("MainWindow", "\346\237\245\350\257\242", nullptr));
