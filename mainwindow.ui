@@ -192,7 +192,7 @@
     <addaction name="action_newDatabase"/>
     <addaction name="action_closeDatabase"/>
     <addaction name="action_openTestDatabase"/>
-    <addaction name="action_saveExcel"/>
+    <addaction name="action_exportExcel"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -226,7 +226,7 @@
     <string>另存为</string>
    </property>
   </action>
-  <action name="action_saveExcel">
+  <action name="action_exportExcel">
    <property name="text">
     <string>导出Excel</string>
    </property>

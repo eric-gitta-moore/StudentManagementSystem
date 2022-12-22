@@ -35,7 +35,7 @@ public:
     QAction *action_addNewLine;
     QAction *action_openDatabase;
     QAction *action_saveFile;
-    QAction *action_saveExcel;
+    QAction *action_exportExcel;
     QAction *action_showStat;
     QAction *action_newDatabase;
     QAction *action_openTestDatabase;
@@ -72,8 +72,8 @@ public:
         action_openDatabase->setObjectName(QString::fromUtf8("action_openDatabase"));
         action_saveFile = new QAction(MainWindow);
         action_saveFile->setObjectName(QString::fromUtf8("action_saveFile"));
-        action_saveExcel = new QAction(MainWindow);
-        action_saveExcel->setObjectName(QString::fromUtf8("action_saveExcel"));
+        action_exportExcel = new QAction(MainWindow);
+        action_exportExcel->setObjectName(QString::fromUtf8("action_exportExcel"));
         action_showStat = new QAction(MainWindow);
         action_showStat->setObjectName(QString::fromUtf8("action_showStat"));
         action_newDatabase = new QAction(MainWindow);
@@ -202,7 +202,7 @@ public:
         menu->addAction(action_newDatabase);
         menu->addAction(action_closeDatabase);
         menu->addAction(action_openTestDatabase);
-        menu->addAction(action_saveExcel);
+        menu->addAction(action_exportExcel);
         menu_2->addAction(action_addNewLine);
         menu_3->addAction(action_showStat);
 
@@ -217,7 +217,7 @@ public:
         action_addNewLine->setText(QCoreApplication::translate("MainWindow", "\346\267\273\345\212\240\344\270\200\350\241\214", nullptr));
         action_openDatabase->setText(QCoreApplication::translate("MainWindow", "\346\211\223\345\274\200\346\225\260\346\215\256\345\272\223", nullptr));
         action_saveFile->setText(QCoreApplication::translate("MainWindow", "\345\217\246\345\255\230\344\270\272", nullptr));
-        action_saveExcel->setText(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272Excel", nullptr));
+        action_exportExcel->setText(QCoreApplication::translate("MainWindow", "\345\257\274\345\207\272Excel", nullptr));
         action_showStat->setText(QCoreApplication::translate("MainWindow", "\346\230\276\347\244\272\347\273\237\350\256\241\347\273\223\346\236\234", nullptr));
         action_newDatabase->setText(QCoreApplication::translate("MainWindow", "\346\226\260\345\273\272\346\225\260\346\215\256\345\272\223", nullptr));
         action_openTestDatabase->setText(QCoreApplication::translate("MainWindow", "\344\275\277\347\224\250\346\265\213\350\257\225\346\225\260\346\215\256\345\272\223", nullptr));

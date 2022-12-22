@@ -15,7 +15,8 @@ find_package(Qt5 COMPONENTS
         Sql
         REQUIRED)
 
-add_executable(StudentSystem main.cpp mainwindow.cpp mainwindow.h mainwindow.ui test_data.h utils/ReadOnlyDelegate.cpp utils/ReadOnlyDelegate.h StudentModel.cpp StudentModel.h)
+add_executable(StudentSystem main.cpp mainwindow.cpp mainwindow.h mainwindow.ui test_data.h utils/ReadOnlyDelegate.cpp utils/ReadOnlyDelegate.h StudentModel.cpp StudentModel.h libs/BasicExcel.hpp libs/BasicExcel.cpp utils/tools.hpp)
+
 target_link_libraries(StudentSystem
         Qt5::Core
         Qt5::Gui
