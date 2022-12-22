@@ -13,6 +13,7 @@
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlQuery>
 #include "QItemSelectionModel"
+#include "utils/tools.hpp"
 
 #pragma execution_character_set("utf-8")
 
@@ -59,6 +60,8 @@ private:
     void handle_menu_action_openTestDatabase();
 
     void handle_menu_action_closeDatabase();
+
+    void handle_menu_action_exportExcel();
 
     void
     handle_model_dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);

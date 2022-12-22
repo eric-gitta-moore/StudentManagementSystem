@@ -12,6 +12,8 @@
 #include "QTableWidget"
 #include "QFileDialog"
 #include "test_data.h"
+#include <QtConcurrent/QtConcurrent>
+#include "libs/BasicExcel.hpp"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -99,6 +101,7 @@ void MainWindow::bindSlot() {
     connect(ui->action_openDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_openDatabase);
     connect(ui->action_openTestDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_openTestDatabase);
     connect(ui->action_closeDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_closeDatabase);
+    connect(ui->action_exportExcel, &QAction::triggered, this, &MainWindow::handle_menu_action_exportExcel);
 }
 
 [[maybe_unused]] void MainWindow::on_tableView_customContextMenuRequested(const QPoint &pos) {
@@ -347,4 +350,52 @@ bool MainWindow::checkDatabase() {
         return false;
     }
     return true;
+}
+
+void MainWindow::handle_menu_action_exportExcel() {
+//    QtConcurrent::run([&]() {
+    YExcel::BasicExcel e;
+    e.New(1);
+//        e.RenameWorksheet(QString2Wchar(tr("Sheet1")), QString2Wchar(tr("高等数学排名")));
+//        e.AddWorksheet(QString2Wchar(QString("英语排名")));
+//        e.AddWorksheet(QString2Wchar(QString("计算机导论排名")));
+    for (const auto &courseName: courseList) {
+        YExcel::BasicExcelWorksheet *sheet1 = e.AddWorksheet(QString2Wchar(QString("%1排名").arg(courseName)));
+//            YExcel::BasicExcelWorksheet *sheet1 = e.GetWorksheet(QString2Wchar(QString("%1排名").arg(courseName)));
+        if (sheet1) {
+            sheet1->Cell(0, 0)->SetWString(QString2Wchar(tr("学号")));
+            sheet1->Cell(0, 1)->SetWString(QString2Wchar(tr("姓名")));
+            auto it = courseList.begin();
+            int col = 2;
+            for (; it != courseList.end(); it++, col++) {
+                sheet1->Cell(0, col)->SetWString(QString2Wchar(it.value()));
+            }
+            sheet1->Cell(0, col)->SetWString(QString2Wchar(QString("平均成绩")));
+        }
+        QSqlQuery query(db);
+        query.exec(QString("select *\n"
+                           "from student\n"
+                           "order by %1 desc;").arg(courseList.key(courseName)));
+        for (int row = 1; query.next(); row++) {
+            QSqlRecord record = query.record();
+            for (int col = 0; col < record.count(); col++) {
+                sheet1->Cell(row, col)->SetWString(QString2Wchar(record.value(col).toString()));
+            }
+        }
+    }
+    QString saveFileName = QFileDialog::getSaveFileName(this, "请选择保存路径", ".", "Excel (*.xls)");
+    if (saveFileName.isEmpty())
+        return;
+    QFile file(saveFileName);
+    if (file.exists() && !file.remove()) {
+        QMessageBox::critical(this, "警告", QString("%1文件被占用，无法删除").arg(saveFileName));
+        return;
+    }
+    bool result = e.SaveAs(saveFileName.toStdString().c_str());
+    if (result) {
+        QMessageBox::information(this, "提示", "保存成功");
+    } else {
+        QMessageBox::critical(this, "警告", "保存失败");
+    }
+//    });
 }
