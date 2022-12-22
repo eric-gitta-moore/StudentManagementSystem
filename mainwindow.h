@@ -12,6 +12,7 @@
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlQuery>
+#include "QItemSelectionModel"
 
 #pragma execution_character_set("utf-8")
 
@@ -43,6 +44,7 @@ private:
     QLabel *statusBarRight;
     QString databaseFileName = "";
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    QItemSelectionModel *itemSelectionModel;
 
     void bindSlot();
 
@@ -58,7 +60,16 @@ private:
 
     void handle_menu_action_closeDatabase();
 
+    void
+    handle_model_dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+
     void initStatusBar();
+
+    void reCalcAverage(const QModelIndex &index);
+
+    void refreshStatusBar();
+
+    void initModel(QString &table);
 
     void initModel();
 

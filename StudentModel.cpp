@@ -2,6 +2,7 @@
 // Created by w on 2022/12/22.
 //
 
+#include <QVariant>
 #include "StudentModel.h"
 
 [[maybe_unused]] double StudentModel::getAverage() {
@@ -25,4 +26,19 @@ double StudentModel::getSum() {
 
 StudentModel::StudentModel() {
 
+}
+
+QSqlRecord StudentModel::getRecord() {
+    QSqlRecord record;
+    record.setValue("id", QVariant(id));
+    record.setValue("name", QVariant(name));
+    record.setValue("math", QVariant(math));
+    record.setValue("english", QVariant(english));
+    record.setValue("compute", QVariant(compute));
+    record.setValue("average", QVariant(getAverage()));
+    return record;
+}
+
+StudentModel::StudentModel(QString id) {
+    this->id = id;
 }

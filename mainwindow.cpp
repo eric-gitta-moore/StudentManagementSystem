@@ -24,8 +24,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 }
 
 void MainWindow::initModel() {
+    QString table = QString("student");
+    initModel(table);
+}
+
+void MainWindow::initModel(QString &table) {
     model = new QSqlTableModel(this);
-    model->setTable("student");
+    model->setTable(table);
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     model->select();
 
@@ -38,7 +43,37 @@ void MainWindow::initModel() {
     ui->tableView->setItemDelegateForColumn(5, new ReadOnlyDelegate);
 
     ui->tableView->setModel(model);
+    connect(model, &QSqlTableModel::dataChanged, this, &MainWindow::handle_model_dataChanged);
+
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+//    itemSelectionModel = new QItemSelectionModel(model);
+//    connect(itemSelectionModel, &QItemSelectionModel::currentChanged, this, &MainWindow::handle_model_dataChanged);
+//    ui->tableView->setSelectionModel(itemSelectionModel);
+}
+
+void MainWindow::handle_model_dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
+                                          const QVector<int> &roles) {
+    Q_UNUSED(bottomRight)
+    Q_UNUSED(roles)
+    qDebug() << QString::asprintf("handle_model_dataChanged [%d,%d]", topLeft.row(), topLeft.column());
+    reCalcAverage(topLeft);
+}
+
+void MainWindow::reCalcAverage(const QModelIndex &index) {
+    auto record = model->record(index.row());
+//    qDebug() << "reCalcAverage " << record;
+    StudentModel studentModel(record.value("id").toString(),
+                              record.value("name").toString(),
+                              record.value("math").toDouble(),
+                              record.value("english").toDouble(),
+                              record.value("compute").toDouble());
+//    record.setValue("average", studentModel.getAverage());
+//    model->setRecord(index.row(), record);
+    if (record.value("average").toDouble() != studentModel.getAverage()) {
+        qDebug() << record.value("average").toDouble() << " " << studentModel.getAverage();
+        model->setData(model->index(index.row(), record.indexOf("average")), studentModel.getAverage());
+    }
 }
 
 void MainWindow::initStatusBar() {
@@ -46,6 +81,11 @@ void MainWindow::initStatusBar() {
     ui->statusbar->addWidget(statusBarLeft);
     statusBarRight = new QLabel(QString("总人数：%1").arg(model->rowCount()));
     ui->statusbar->addPermanentWidget(statusBarRight);
+}
+
+void MainWindow::refreshStatusBar() {
+    statusBarLeft->setText("欢迎使用学生成绩管理系统");
+    statusBarRight->setText(QString("总人数：%1").arg(model->rowCount()));
 }
 
 MainWindow::~MainWindow() {
@@ -62,7 +102,6 @@ void MainWindow::bindSlot() {
 }
 
 [[maybe_unused]] void MainWindow::on_tableView_customContextMenuRequested(const QPoint &pos) {
-    if (!checkDatabase())return;
     QMenu menu;
     //添加右键菜单的选项
     menu.addAction("添加一行", this, &MainWindow::handle_menu_action_addNewLine);
@@ -91,8 +130,22 @@ void MainWindow::setScoreInStatusBar(StudentModel *studentModel) {
 }
 
 void MainWindow::handle_menu_action_addNewLine() {
+    if (!checkDatabase())return;
+//    StudentModel studentModel(QString(model->rowCount()));
+//    model->insertRecord(model->rowCount(), studentModel.getRecord());
+
     model->insertRow(model->rowCount());
-    qDebug() << "handle_menu_addNewLineAtRear";
+    int row = model->rowCount() - 1;
+    int colLast = model->columnCount() - 1;
+    QModelIndex index =
+            model->index(model->rowCount() - 1, model->columnCount() - 1);
+    qDebug() << "handle_menu_action_addNewLine " << index.row() << "," << index.column();
+    model->setData(model->index(row, 0), QVariant(QString::asprintf("%03d", row + 1)));
+    model->setData(model->index(row, 1), QVariant("[no name]"));
+    model->setData(model->index(row, 2), QVariant(0));
+    model->setData(model->index(row, 3), QVariant(0));
+    model->setData(model->index(row, 4), QVariant(0));
+    model->setData(model->index(row, colLast), QVariant(0));
     refreshUI();
 }
 
@@ -104,7 +157,8 @@ void MainWindow::handle_menu_action_addNewLine() {
         QMessageBox::information(this, "提示", "保存成功");
     } else {
         model->database().rollback();
-        QMessageBox::critical(this, "错误", model->lastError().text());
+        QMessageBox::critical(this, "错误", "数据错误，请检查数据后重试");
+        qDebug() << "on_pushButton_Save_clicked " << model->lastError().text();
     }
 }
 
@@ -130,10 +184,11 @@ void MainWindow::on_pushButton_search_clicked() {
 }
 
 void MainWindow::refreshUI() {
-    initStatusBar();
+    refreshStatusBar();
 }
 
 void MainWindow::handle_menu_action_showStat() {
+    if (!checkDatabase())return;
     QTableWidget *tableWidget = new QTableWidget();
     tableWidget->setAlternatingRowColors(true);
     tableWidget->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectItems);
@@ -173,7 +228,7 @@ void MainWindow::handle_menu_action_showStat() {
         query.next();
         qDebug() << "query.value(\"avg\") " << query.value("avg").toString();
 
-        QString avg = query.value("avg").toString();
+        QString avg = QString::asprintf("%0.2lf", query.value("avg").toDouble());
         QString max = query.value("max").toString();
         QString min = query.value("min").toString();
         QString fail = query.value("fail").toString();
@@ -221,6 +276,7 @@ bool MainWindow::reconnectDatabase(QString &name) {
                               "无法打开数据库", QMessageBox::Cancel);
         return false;
     }
+    initModel();
     setWindowTitle(QString("当前操作数据库：%1").arg(name));
     return true;
 }
@@ -242,6 +298,7 @@ bool MainWindow::reBuildDatabase(QString &name) {
         return false;
 
     QSqlQuery query(db);
+    query.exec("drop table student");
     bool test = query.exec(
             "create table student\n"
             "(\n"
@@ -255,7 +312,7 @@ bool MainWindow::reBuildDatabase(QString &name) {
             "    average double       not null\n"
             ")"
     );
-    qDebug() << "[createTestDatabaseConnection] query: " << test << " ,error: " << query.lastError();
+    qDebug() << "[reBuildDatabase] query: " << test << " ,error: " << query.lastError();
     QVector<StudentModel *> vector;
     vector.push_back(new StudentModel(QString("001"), QString("张磊"), 80, 73, 90));
     vector.push_back(new StudentModel(QString("002"), QString("王鹏"), 76, 69, 70));
@@ -277,7 +334,8 @@ bool MainWindow::reBuildDatabase(QString &name) {
 
 void MainWindow::handle_menu_action_closeDatabase() {
     db.close();
-    initModel();
+    QString table = "";
+    initModel(table);
     setWindowTitle("学生成绩管理系统");
 }
 
