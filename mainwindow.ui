@@ -188,8 +188,10 @@
     <property name="title">
      <string>文件</string>
     </property>
-    <addaction name="action_openFile"/>
-    <addaction name="action_saveFile"/>
+    <addaction name="action_openDatabase"/>
+    <addaction name="action_newDatabase"/>
+    <addaction name="action_closeDatabase"/>
+    <addaction name="action_openTestDatabase"/>
     <addaction name="action_saveExcel"/>
    </widget>
    <widget class="QMenu" name="menu_2">
@@ -214,9 +216,9 @@
     <string>添加一行</string>
    </property>
   </action>
-  <action name="action_openFile">
+  <action name="action_openDatabase">
    <property name="text">
-    <string>打开文件</string>
+    <string>打开数据库</string>
    </property>
   </action>
   <action name="action_saveFile">
@@ -232,6 +234,21 @@
   <action name="action_showStat">
    <property name="text">
     <string>显示统计结果</string>
+   </property>
+  </action>
+  <action name="action_newDatabase">
+   <property name="text">
+    <string>新建数据库</string>
+   </property>
+  </action>
+  <action name="action_openTestDatabase">
+   <property name="text">
+    <string>使用测试数据库</string>
+   </property>
+  </action>
+  <action name="action_closeDatabase">
+   <property name="text">
+    <string>关闭数据库</string>
    </property>
   </action>
  </widget>

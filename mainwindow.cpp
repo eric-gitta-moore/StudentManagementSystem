@@ -10,14 +10,20 @@
 #include "QtSql/QtSql"
 #include "utils/ReadOnlyDelegate.h"
 #include "QTableWidget"
-
+#include "QFileDialog"
+#include "test_data.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-
     currentIndex = new QModelIndex;
-    bindSlot();
 
+    setWindowTitle("学生成绩管理系统");
+    initModel();
+    initStatusBar();
+    bindSlot();
+}
+
+void MainWindow::initModel() {
     model = new QSqlTableModel(this);
     model->setTable("student");
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -33,8 +39,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     ui->tableView->setModel(model);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-    initStatusBar();
 }
 
 void MainWindow::initStatusBar() {
@@ -49,14 +53,19 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::bindSlot() {
-    connect(ui->action_addNewLine, &QAction::triggered, this, &MainWindow::handle_menu_addNewLine);
-    connect(ui->action_showStat, &QAction::triggered, this, &MainWindow::handle_menu_showStat);
+    connect(ui->action_addNewLine, &QAction::triggered, this, &MainWindow::handle_menu_action_addNewLine);
+    connect(ui->action_showStat, &QAction::triggered, this, &MainWindow::handle_menu_action_showStat);
+    connect(ui->action_newDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_newDatabase);
+    connect(ui->action_openDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_openDatabase);
+    connect(ui->action_openTestDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_openTestDatabase);
+    connect(ui->action_closeDatabase, &QAction::triggered, this, &MainWindow::handle_menu_action_closeDatabase);
 }
 
 [[maybe_unused]] void MainWindow::on_tableView_customContextMenuRequested(const QPoint &pos) {
+    if (!checkDatabase())return;
     QMenu menu;
     //添加右键菜单的选项
-    menu.addAction("添加一行", this, &MainWindow::handle_menu_addNewLine);
+    menu.addAction("添加一行", this, &MainWindow::handle_menu_action_addNewLine);
     //显示menu菜单并设置其显示位置为鼠标位置
     menu.exec(QCursor::pos());
 }
@@ -81,36 +90,40 @@ void MainWindow::setScoreInStatusBar(StudentModel *studentModel) {
     statusBarLeft->setText(str);
 }
 
-void MainWindow::handle_menu_addNewLine() {
+void MainWindow::handle_menu_action_addNewLine() {
     model->insertRow(model->rowCount());
     qDebug() << "handle_menu_addNewLineAtRear";
     refreshUI();
 }
 
 [[maybe_unused]] void MainWindow::on_pushButton_Save_clicked() {
+    if (!checkDatabase())return;
     model->database().transaction();
     if (model->submitAll()) {
         model->database().commit();
         QMessageBox::information(this, "提示", "保存成功");
     } else {
         model->database().rollback();
-        QMessageBox::warning(this, "错误", model->lastError().text());
+        QMessageBox::critical(this, "错误", model->lastError().text());
     }
 }
 
 void MainWindow::on_pushButton_search_clicked() {
+    if (!checkDatabase())return;
     QString searchValue = ui->lineEdit_searchValue->text();
     model->setFilter(QString::asprintf("name like '%%%s%%' or id like '%%%s%%'", searchValue.toStdString().c_str(),
                                        searchValue.toStdString().c_str()));
 }
 
 [[maybe_unused]] void MainWindow::on_pushButton_Revert_clicked() {
+    if (!checkDatabase())return;
     model->revertAll();
     model->revertAll();
     QMessageBox::information(this, "提示", "已还原修改");
 }
 
 [[maybe_unused]] void MainWindow::on_pushButton_Reload_clicked() {
+    if (!checkDatabase())return;
     ui->tableView->sortByColumn(-1, Qt::SortOrder::AscendingOrder);
     ui->tableView->update();
     ui->tableView->repaint();
@@ -120,7 +133,7 @@ void MainWindow::refreshUI() {
     initStatusBar();
 }
 
-void MainWindow::handle_menu_showStat() {
+void MainWindow::handle_menu_action_showStat() {
     QTableWidget *tableWidget = new QTableWidget();
     tableWidget->setAlternatingRowColors(true);
     tableWidget->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectItems);
@@ -179,4 +192,101 @@ void MainWindow::handle_menu_showStat() {
     }
     model->database().exec().exec();
     tableWidget->show();
+}
+
+void MainWindow::handle_menu_action_openTestDatabase() {
+    if (!createTestDatabaseConnection(db)) {
+        QMessageBox::critical(this, "错误", "打开测试数据库失败");
+        return;
+    }
+    setWindowTitle(QString("当前操作数据库：%1").arg("测试数据库:memory:"));
+    initModel();
+}
+
+void MainWindow::handle_menu_action_openDatabase() {
+    QString fileName = QFileDialog::getOpenFileName(this, "请选择数据库", ".", "SQLite 文件 (*.dat *.sqlite)");
+    if (fileName.isEmpty()) {
+        return;
+    }
+    databaseFileName = fileName;
+    reconnectDatabase(fileName);
+}
+
+bool MainWindow::reconnectDatabase(QString &name) {
+    db.close();
+    db.setDatabaseName(name);
+    if (!db.open()) {
+        qDebug() << "reconnectDatabase: " << db.lastError();
+        QMessageBox::critical(this, "错误",
+                              "无法打开数据库", QMessageBox::Cancel);
+        return false;
+    }
+    setWindowTitle(QString("当前操作数据库：%1").arg(name));
+    return true;
+}
+
+void MainWindow::handle_menu_action_newDatabase() {
+    QString fileName = QFileDialog::getSaveFileName(this, "请选择数据库保存位置", "./database.dat",
+                                                    "SQLite 文件 (*.dat *.sqlite)");
+    qDebug() << "handle_menu_action_newDatabase " << fileName;
+    if (fileName.isEmpty())
+        return;
+    if (reBuildDatabase(fileName)) {
+        reconnectDatabase(fileName);
+    }
+}
+
+bool MainWindow::reBuildDatabase(QString &name) {
+    db.setDatabaseName(name);
+    if (!db.open())
+        return false;
+
+    QSqlQuery query(db);
+    bool test = query.exec(
+            "create table student\n"
+            "(\n"
+            "    id      varchar(255) not null\n"
+            "        constraint student_pk\n"
+            "            primary key,\n"
+            "    name    varchar(255) not null,\n"
+            "    math    double       not null,\n"
+            "    english double       not null,\n"
+            "    compute double       not null,\n"
+            "    average double       not null\n"
+            ")"
+    );
+    qDebug() << "[createTestDatabaseConnection] query: " << test << " ,error: " << query.lastError();
+    QVector<StudentModel *> vector;
+    vector.push_back(new StudentModel(QString("001"), QString("张磊"), 80, 73, 90));
+    vector.push_back(new StudentModel(QString("002"), QString("王鹏"), 76, 69, 70));
+    vector.push_back(new StudentModel(QString("003"), QString("黎明"), 60, 78, 69));
+    vector.push_back(new StudentModel(QString("004"), QString("黎明"), 66, 44, 55));
+
+    for (auto item: vector) {
+        query.prepare("insert into student values(?,?,?,?,?,?)");
+        query.addBindValue(item->id);
+        query.addBindValue(item->name);
+        query.addBindValue(item->math);
+        query.addBindValue(item->english);
+        query.addBindValue(item->compute);
+        query.addBindValue(item->getAverage());
+        query.exec();
+    }
+    return test;
+}
+
+void MainWindow::handle_menu_action_closeDatabase() {
+    db.close();
+    initModel();
+    setWindowTitle("学生成绩管理系统");
+}
+
+bool MainWindow::checkDatabase() {
+    QSqlQuery query(db);
+    query.exec("select count(*) from student");
+    if (!query.next()) {
+        QMessageBox::warning(this, "警告", "无可操作数据库");
+        return false;
+    }
+    return true;
 }
