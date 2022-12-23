@@ -14,6 +14,7 @@
 #include <QtSql/QSqlQuery>
 #include "QItemSelectionModel"
 #include "utils/tools.hpp"
+#include "map"
 
 #pragma execution_character_set("utf-8")
 
@@ -31,18 +32,27 @@ public:
 
     ~MainWindow() override;
 
-    QMap<QString, QString> courseList = {
+    QVector<std::tuple<QString, QString>> courseList = {
+            {"math",    "高等数学"},
+            {"english", "英语"},
+            {"compute", "计算机导论"}
+    };
+
+    QVector<std::tuple<QString, QString>> tableHeaderList = {
+            {"id",      "学号"},
+            {"name",    "姓名"},
             {"math",    "高等数学"},
             {"english", "英语"},
             {"compute", "计算机导论"},
+            {"average", "平均成绩"}
     };
 
 private:
     Ui::MainWindow *ui;
     QSqlTableModel *model;
     const QModelIndex *currentIndex;
-    QLabel *statusBarLeft;
-    QLabel *statusBarRight;
+    QLabel *statusBarLeft = nullptr;
+    QLabel *statusBarRight = nullptr;
     QString databaseFileName = "";
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     QItemSelectionModel *itemSelectionModel;
