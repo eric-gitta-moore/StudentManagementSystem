@@ -17,7 +17,6 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-    currentIndex = new QModelIndex;
 
     setWindowTitle("学生成绩管理系统");
     initModel();
@@ -119,13 +118,17 @@ void MainWindow::bindSlot() {
     QMenu menu;
     //添加右键菜单的选项
     menu.addAction("添加一行", this, &MainWindow::handle_menu_action_addNewLine);
+    menu.addAction("删除行", this, &MainWindow::handle_menu_action_removeLine);
     //显示menu菜单并设置其显示位置为鼠标位置
     menu.exec(QCursor::pos());
 }
 
-[[maybe_unused]] void MainWindow::on_tableView_pressed(const QModelIndex &index) {
-    currentIndex = &index;
+void MainWindow::handle_menu_action_removeLine() {
+    QModelIndex index = ui->tableView->currentIndex();
+    model->removeRow(index.row());
+}
 
+[[maybe_unused]] void MainWindow::on_tableView_pressed(const QModelIndex &index) {
     auto record = model->record(index.row());
 
     setScoreInStatusBar(new StudentModel(record.value("id").toString(),
