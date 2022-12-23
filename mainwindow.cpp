@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     setWindowTitle("学生成绩管理系统");
     initModel();
-    initStatusBar();
+    refreshStatusBar();
     bindSlot();
 }
 
@@ -36,12 +36,9 @@ void MainWindow::initModel(QString &table) {
     model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     model->select();
 
-    model->setHeaderData(0, Qt::Horizontal, "学号");
-    model->setHeaderData(1, Qt::Horizontal, "姓名");
-    model->setHeaderData(2, Qt::Horizontal, courseList.value("math", "高等数学"));
-    model->setHeaderData(3, Qt::Horizontal, courseList.value("english", "英语"));
-    model->setHeaderData(4, Qt::Horizontal, courseList.value("compute", "计算机导论"));
-    model->setHeaderData(5, Qt::Horizontal, "平均成绩");
+    for (int i = 0; i < tableHeaderList.size(); ++i) {
+        model->setHeaderData(i, Qt::Horizontal, std::get<1>(tableHeaderList[i]));
+    }
     ui->tableView->setItemDelegateForColumn(5, new ReadOnlyDelegate);
 
     ui->tableView->setModel(model);
@@ -52,6 +49,8 @@ void MainWindow::initModel(QString &table) {
 //    itemSelectionModel = new QItemSelectionModel(model);
 //    connect(itemSelectionModel, &QItemSelectionModel::currentChanged, this, &MainWindow::handle_model_dataChanged);
 //    ui->tableView->setSelectionModel(itemSelectionModel);
+
+    refreshUI();
 }
 
 void MainWindow::handle_model_dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
@@ -79,13 +78,25 @@ void MainWindow::reCalcAverage(const QModelIndex &index) {
 }
 
 void MainWindow::initStatusBar() {
-    statusBarLeft = new QLabel("欢迎使用学生成绩管理系统");
-    ui->statusbar->addWidget(statusBarLeft);
-    statusBarRight = new QLabel(QString("总人数：%1").arg(model->rowCount()));
-    ui->statusbar->addPermanentWidget(statusBarRight);
+    if (statusBarLeft == nullptr) {
+        statusBarLeft = new QLabel("欢迎使用学生成绩管理系统");
+        ui->statusbar->addWidget(statusBarLeft);
+    }
+    if (statusBarRight == nullptr) {
+        statusBarRight = new QLabel(QString("总人数：%1").arg(model->rowCount()));
+        ui->statusbar->addPermanentWidget(statusBarRight);
+    }
 }
 
 void MainWindow::refreshStatusBar() {
+    if (statusBarLeft == nullptr) {
+        statusBarLeft = new QLabel("欢迎使用学生成绩管理系统");
+        ui->statusbar->addWidget(statusBarLeft);
+    }
+    if (statusBarRight == nullptr) {
+        statusBarRight = new QLabel(QString("总人数：0"));
+        ui->statusbar->addPermanentWidget(statusBarRight);
+    }
     statusBarLeft->setText("欢迎使用学生成绩管理系统");
     statusBarRight->setText(QString("总人数：%1").arg(model->rowCount()));
 }
@@ -213,9 +224,8 @@ void MainWindow::handle_menu_action_showStat() {
             tableWidget->horizontalHeader()->minimumSectionSize(),
             tableWidget->verticalHeader()->defaultSectionSize() * (tableWidget->verticalHeader()->count() + 1));
 
-    auto it = courseList.begin();
-    for (int row = 0; it != courseList.end(); it++, row++) {
-        tableWidget->setItem(row, 0, new QTableWidgetItem(it.value()));
+    for (int row = 0; row < courseList.count(); row++) {
+        tableWidget->setItem(row, 0, new QTableWidgetItem(std::get<1>(courseList[row])));
 
         QSqlQuery query(model->database());
         QString sql = QString("select avg(%1)                                     as avg,\n"
@@ -226,7 +236,7 @@ void MainWindow::handle_menu_action_showStat() {
                               "       (select count() from student where 70 <= %1 and %1 <= 79) as s70,\n"
                               "       (select count() from student where 80 <= %1 and %1 <= 89) as s80,\n"
                               "       (select count() from student where 90 <= %1) as s90\n"
-                              "from student").arg(it.key());
+                              "from student").arg(std::get<0>(courseList[row]));
         query.exec(sql);
         query.next();
         qDebug() << "query.value(\"avg\") " << query.value("avg").toString();
@@ -253,7 +263,8 @@ void MainWindow::handle_menu_action_showStat() {
 }
 
 void MainWindow::handle_menu_action_openTestDatabase() {
-    if (!createTestDatabaseConnection(db)) {
+    QString dbName(":memory:");
+    if (!reBuildDatabase(dbName)) {
         QMessageBox::critical(this, "错误", "打开测试数据库失败");
         return;
     }
@@ -296,6 +307,7 @@ void MainWindow::handle_menu_action_newDatabase() {
 }
 
 bool MainWindow::reBuildDatabase(QString &name) {
+    db.close();
     db.setDatabaseName(name);
     if (!db.open())
         return false;
@@ -320,7 +332,11 @@ bool MainWindow::reBuildDatabase(QString &name) {
     vector.push_back(new StudentModel(QString("001"), QString("张磊"), 80, 73, 90));
     vector.push_back(new StudentModel(QString("002"), QString("王鹏"), 76, 69, 70));
     vector.push_back(new StudentModel(QString("003"), QString("黎明"), 60, 78, 69));
-    vector.push_back(new StudentModel(QString("004"), QString("黎明"), 66, 44, 55));
+    vector.push_back(new StudentModel(QString("004"), QString("刘鹏"), 55, 66, 60));
+    vector.push_back(new StudentModel(QString("005"), QString("李四"), 78, 70, 80));
+    vector.push_back(new StudentModel(QString("006"), QString("张佳"), 43, 50, 60));
+    vector.push_back(new StudentModel(QString("007"), QString("赵平"), 89, 85, 79));
+    vector.push_back(new StudentModel(QString("008"), QString("高洁"), 90, 89, 70));
 
     for (auto item: vector) {
         query.prepare("insert into student values(?,?,?,?,?,?)");
@@ -356,30 +372,46 @@ void MainWindow::handle_menu_action_exportExcel() {
 //    QtConcurrent::run([&]() {
     YExcel::BasicExcel e;
     e.New(1);
-//        e.RenameWorksheet(QString2Wchar(tr("Sheet1")), QString2Wchar(tr("高等数学排名")));
-//        e.AddWorksheet(QString2Wchar(QString("英语排名")));
-//        e.AddWorksheet(QString2Wchar(QString("计算机导论排名")));
-    for (const auto &courseName: courseList) {
-        YExcel::BasicExcelWorksheet *sheet1 = e.AddWorksheet(QString2Wchar(QString("%1排名").arg(courseName)));
-//            YExcel::BasicExcelWorksheet *sheet1 = e.GetWorksheet(QString2Wchar(QString("%1排名").arg(courseName)));
-        if (sheet1) {
-            sheet1->Cell(0, 0)->SetWString(QString2Wchar(tr("学号")));
-            sheet1->Cell(0, 1)->SetWString(QString2Wchar(tr("姓名")));
-            auto it = courseList.begin();
-            int col = 2;
-            for (; it != courseList.end(); it++, col++) {
-                sheet1->Cell(0, col)->SetWString(QString2Wchar(it.value()));
-            }
-            sheet1->Cell(0, col)->SetWString(QString2Wchar(QString("平均成绩")));
+    QVector<std::tuple<QString, QString>> rankList = courseList;
+    rankList.push_back({"average", "平均成绩"});
+
+    /**
+     * 复制tableView的表头到Sheet表头
+     */
+    auto insertTableHeaderRow = [&](YExcel::BasicExcelWorksheet *sheet) {
+        for (int col = 0; col < model->columnCount(); ++col) {
+            auto headerData = model->headerData(col, Qt::Horizontal);
+            sheet->Cell(0, col)->SetWString(QString2Wchar(headerData.toString()));
         }
+    };
+
+    YExcel::BasicExcelWorksheet *sheet1 = e.GetWorksheet(0ULL);
+    if (!sheet1)
+        return;
+    insertTableHeaderRow(sheet1);
+    for (int row = 0; row < model->rowCount(); row++) {
+        auto recordItem = model->record(row);
+        for (int col = 0; col < recordItem.count(); ++col) {
+            auto value = recordItem.value(col);
+            sheet1->Cell(row + 1, col)->SetWString(QString2Wchar(value.toString()));
+        }
+    }
+
+    for (const auto &rankItem: rankList) {
+        YExcel::BasicExcelWorksheet *worksheet = e.AddWorksheet(
+                QString2Wchar(QString("%1排名").arg(std::get<1>(rankItem))));
+        if (!worksheet)
+            continue;
+        insertTableHeaderRow(worksheet);
+
         QSqlQuery query(db);
         query.exec(QString("select *\n"
                            "from student\n"
-                           "order by %1 desc;").arg(courseList.key(courseName)));
+                           "order by %1 desc;").arg(std::get<0>(rankItem)));
         for (int row = 1; query.next(); row++) {
             QSqlRecord record = query.record();
             for (int col = 0; col < record.count(); col++) {
-                sheet1->Cell(row, col)->SetWString(QString2Wchar(record.value(col).toString()));
+                worksheet->Cell(row, col)->SetWString(QString2Wchar(record.value(col).toString()));
             }
         }
     }
