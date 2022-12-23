@@ -62,14 +62,11 @@ void MainWindow::handle_model_dataChanged(const QModelIndex &topLeft, const QMod
 
 void MainWindow::reCalcAverage(const QModelIndex &index) {
     auto record = model->record(index.row());
-//    qDebug() << "reCalcAverage " << record;
     StudentModel studentModel(record.value("id").toString(),
                               record.value("name").toString(),
                               record.value("math").toDouble(),
                               record.value("english").toDouble(),
                               record.value("compute").toDouble());
-//    record.setValue("average", studentModel.getAverage());
-//    model->setRecord(index.row(), record);
     if (record.value("average").toDouble() != studentModel.getAverage()) {
         qDebug() << record.value("average").toDouble() << " " << studentModel.getAverage();
         model->setData(model->index(index.row(), record.indexOf("average")), studentModel.getAverage());
@@ -205,7 +202,9 @@ void MainWindow::refreshUI() {
 }
 
 void MainWindow::handle_menu_action_showStat() {
+    // 检查数据库是否可用
     if (!checkDatabase())return;
+    // 构造窗体
     QTableWidget *tableWidget = new QTableWidget();
     tableWidget->setAlternatingRowColors(true);
     tableWidget->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectItems);
@@ -216,17 +215,21 @@ void MainWindow::handle_menu_action_showStat() {
     tableWidget->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     tableWidget->setSortingEnabled(true);
 
+    // 构造表头
     QStringList headerList;
     headerList << "课程名" << "平均成绩" << "最高分" << "最低分" << "不及格" << "60-69分" << "70-79分" << "80-89分"
                << "90分以上";
     tableWidget->setColumnCount(headerList.count());
     tableWidget->setHorizontalHeaderLabels(headerList);
     tableWidget->setRowCount(courseList.count());
+
+    // 设置合适大小
     tableWidget->resize(
             tableWidget->horizontalHeader()->defaultSectionSize() * (tableWidget->horizontalHeader()->count() + 0) +
             tableWidget->horizontalHeader()->minimumSectionSize(),
             tableWidget->verticalHeader()->defaultSectionSize() * (tableWidget->verticalHeader()->count() + 1));
 
+    // 计算并添加统计数据
     for (int row = 0; row < courseList.count(); row++) {
         tableWidget->setItem(row, 0, new QTableWidgetItem(std::get<1>(courseList[row])));
 
@@ -373,6 +376,7 @@ bool MainWindow::checkDatabase() {
 
 void MainWindow::handle_menu_action_exportExcel() {
 //    QtConcurrent::run([&]() {
+    // 准备Excel
     YExcel::BasicExcel e;
     e.New(1);
     QVector<std::tuple<QString, QString>> rankList = courseList;
@@ -407,6 +411,7 @@ void MainWindow::handle_menu_action_exportExcel() {
             continue;
         insertTableHeaderRow(worksheet);
 
+        // 添加数据到Excel
         QSqlQuery query(db);
         query.exec(QString("select *\n"
                            "from student\n"
@@ -418,6 +423,8 @@ void MainWindow::handle_menu_action_exportExcel() {
             }
         }
     }
+
+    // 保存Excel
     QString saveFileName = QFileDialog::getSaveFileName(this, "请选择保存路径", ".", "Excel (*.xls)");
     if (saveFileName.isEmpty())
         return;
