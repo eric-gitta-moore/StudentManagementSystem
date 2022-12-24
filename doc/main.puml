@@ -1,0 +1,35 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor 用户 as user
+control QMainWindow as window
+entity QTableView
+entity QSqlTableModel
+entity StudentModel
+database 数据库 as Database
+Queue Excel导出队列 as excel
+
+user -> window: 打开软件
+user -> Database: 选择/新建数据库
+Database -> QSqlTableModel: 绑定数据模型
+QSqlTableModel -> StudentModel: 计算并统计数据
+activate StudentModel
+StudentModel --> QSqlTableModel: 获取计算结果
+deactivate StudentModel
+QSqlTableModel -> QTableView: 显示模型数据
+QTableView -> user: 呈现数据
+user -> QTableView: 选择排序列
+QTableView -> QSqlTableModel: 计算/排序
+QSqlTableModel -> QTableView: 实时显示结果
+user -> window: 导出Excel
+window -> excel: 添加队列
+excel -> Database: 读取数据
+Database -> excel: 计算并排序
+excel -> window: 文件准备完毕\n通知保存
+window -> user: 询问保存位置
+user -> user: 选择保存路径
+excel -> user: 写入指定文件
+
+@enduml

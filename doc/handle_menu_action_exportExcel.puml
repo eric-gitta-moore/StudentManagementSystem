@@ -1,0 +1,99 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+start
+:MainWindow::handle_menu_action_exportExcel();
+note right: 函数开始
+:YExcel::BasicExcel e;
+note right: 准备Excel
+
+group 写入当前TableView到Sheet1
+
+    :sheet1 = e.GetWorksheet(0ULL);
+    note
+    获取第一个Sheet
+    将当前TableView的写入
+    end note
+    if(sheet1?) then (sheet1==nullptr)
+        stop
+    else (正常获取)
+    endif
+    :insertTableHeaderRow(sheet1);
+    note right: 插入表头
+
+    while (model->record?) is (有可读取记录)
+      :sheet1->Cell(行号, 列号)->SetWString;
+      note
+      设置单元格数据
+      end note
+    endwhile (无剩余记录)
+
+end group
+
+group 写入需要排序列到对应Sheet
+
+    while (需要排序的字段)
+        :worksheet = e.AddWorksheet;
+        note right: 添加对应工作表
+        if (worksheet?) is (添加失败) then
+        else (添加成功)
+            :insertTableHeaderRow(worksheet);
+            note
+            插入表头
+            end note
+
+            :query.exec;
+            note
+            按照对应排序字段查询
+            end note
+
+            while (query.next()?) is (有可读取记录)
+              :worksheet->Cell(行号, 列号)->SetWString;
+              note
+              设置单元格数据
+              end note
+            endwhile (无剩余记录)
+        endif
+
+    endwhile
+
+end group
+
+group 保存Excel
+
+    :QFileDialog::getSaveFileName;
+    note right: 选择保存路径
+
+    if (saveFileName.isEmpty()) is (文件路径不为空) then
+    else (文件路径为空\n取消保存)
+        stop
+    endif
+
+    if (file.exists()) is (文件存在) then
+        :删除已存在文件;
+        if (file.remove()) is (文件无法删除) then
+            :QMessageBox::critical;
+            note
+            文件被占用，无法删除
+            end note
+            stop
+        else (文件成功删除)
+        endif
+    else (文件不存在)
+    endif
+
+    if (e.SaveAs(saveFileName)) is (保存成功) then
+
+        :QMessageBox::information("保存成功");
+
+    else (保存失败)
+
+        :QMessageBox::critical("保存失败");
+
+    endif
+
+end group
+
+stop
+
+@enduml
