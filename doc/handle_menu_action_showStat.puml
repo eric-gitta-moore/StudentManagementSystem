@@ -1,0 +1,19 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+boundary QMainWindow as window
+entity QTableWidget
+database 数据库 as data
+
+autonumber
+
+window -> window: 触发handle_menu_action_showStat\n显示统计信息
+window -> data: 检查数据库是否可用
+window -> QTableWidget: 构建窗体
+QTableWidget -> QTableWidget: 构建表头
+QTableWidget -> QTableWidget: 初始化UI窗口大小
+window -> data: 查询数据库
+data -> window: 计算并返回查询结果
+window -> QTableWidget: 显示结果表格
+
+@enduml

@@ -1,0 +1,37 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+|QMainWindow|
+start
+:MainWindow::on_pushButton_search_clicked();
+note right: 函数开始
+
+if (检查数据库可用?) is (可用) then
+else (不可用)
+    stop
+endif
+
+|QLineEdit|
+:ui->lineEdit_searchValue->text();
+note
+获取搜索内容
+end note
+
+|QSQLTableModel|
+:QSqlTableModel->setFilter(
+name like '%searchValue%' or id like '%searchValue%'
+);
+note
+设置SQL过滤器
+end note
+
+:重新查询数据库;
+
+|QMainWindow|
+:取得数据集;
+
+:渲染更新QTableView视图;
+
+stop
+
+@enduml
