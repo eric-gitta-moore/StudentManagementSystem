@@ -8,7 +8,7 @@
 #include "ui_MainWindow.h"
 #include "qdebug.h"
 #include "QtSql/QtSql"
-#include "utils/ReadOnlyDelegate.h"
+#include "utils/ReadOnlyDelegate.hpp"
 #include "QTableWidget"
 #include "QFileDialog"
 #include "test_data.h"
